@@ -98,11 +98,6 @@ class eventsController extends Controller
             return response()->json("Event does not exist",404);
         }
 
-        //Did the current user create this event?
-        $verify=event_creator::find($id)->user_id;
-        if(auth()->id()!=$verify)
-            return response()->json("Unauthorized 401",401);
-
         //If okay, then update
         $event_stat=invite_status::where('user_id',auth()->id())->where('event_id',$id)->update(['status'=>$request['status']]);
 
@@ -144,6 +139,12 @@ class eventsController extends Controller
 
         //Okay,exists
         $uid=User::where('email',$email)->get()[0]->id;
+
+        //Is the user already a member or an invitee?
+        if(invite_status::where('user_id',$uid)->first()!==null)
+            return response()->json("This person has already received an invite",401);
+
+
         //return $uid;
         $invite_stat=invite_status::create([
                 'user_id'=>$uid,
@@ -188,6 +189,29 @@ class eventsController extends Controller
     {
         //
     }
+
+
+
+    public function showMems()
+    {
+        //
+        $user_id=auth()->id();
+        $events=invite_status::where('user_id',$user_id)->get();
+        $arr=array();
+        foreach($events as $event){
+            if(invite_status::where('event_id',$event->event_id)->where('status','Accepted')->first()!==null){
+                $mem=invite_status::where('event_id',$event->event_id)->where('status','Accepted')->get();
+                $a=array();
+                foreach($mem as $m){
+                    array_push($a,$m->creator->email);
+                }
+                $arr[$event->event_id]=$a;
+            }
+        }
+        return $arr;
+    }
+
+
 
 
     public function remove(Request $request, $id)
@@ -289,7 +313,7 @@ class eventsController extends Controller
         }
 
         $event_creator->delete();
-        return response()->json(null,204);
+        return response()->json("Member has been deleted",204);
 
     }
 }

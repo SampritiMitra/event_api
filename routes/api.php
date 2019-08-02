@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 // });
 
 Route::get('/', 'eventsController@index');
+Route::get('/mems', 'eventsController@showMems');
 Route::post('/register', 'registerController@register');
 Route::post('/inv/{e_id}', 'eventsController@invite');
 Route::post('/create', 'eventsController@create');
