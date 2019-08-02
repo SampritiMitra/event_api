@@ -87,10 +87,21 @@ class eventsController extends Controller
                 'status'=>['required',
                 Rule::in(['Accepted', 'Pending','Rejected'])],
             ];
-            $validator=Validator::make($request->all(),$rules);
+        $validator=Validator::make($request->all(),$rules);
+
         if($validator->fails()){
             return response()->json($validator->errors(),400);
         }
+
+        //Does this event exist?
+        if(event_creator::find($id)===null){
+            return response()->json("Event does not exist",404);
+        }
+
+        //Did the current user create this event?
+        $verify=event_creator::find($id)->user_id;
+        if(auth()->id()!=$verify)
+            return response()->json("Unauthorized 401",401);
 
         $event_stat=invite_status::where('user_id',auth()->id())->where('event_id',$id)->update(['status'=>$request['status']]);
         return response()->json($event_stat,200);
@@ -107,6 +118,11 @@ class eventsController extends Controller
         $validator=Validator::make($request->all(),$rules);
         if($validator->fails()){
             return response()->json($validator->errors(),400);
+        }
+
+        //Does this event exist?
+        if(event_creator::find($id)===null){
+            return response()->json("Event does not exist",404);
         }
 
         //Did the current user create this event?
@@ -146,8 +162,7 @@ class eventsController extends Controller
     public function show(Request $request)
     {
         //
-        return User::all()->where('id',auth()->id());
-        return DB::table('users')->where('id', auth()->id())->get();
+        return User::where('id',auth()->id());
     }
 
     /**
@@ -172,6 +187,11 @@ class eventsController extends Controller
         $validator=Validator::make($request->all(),$rules);
         if($validator->fails()){
             return response()->json($validator->errors(),400);
+        }
+
+        //Does this event exist?
+        if(event_creator::find($id)===null){
+            return response()->json("Event does not exist",404);
         }
 
         //Did the current user create this event?
@@ -206,6 +226,11 @@ class eventsController extends Controller
 			return response()->json($validator->errors(),400);
 		}
 
+        //Does this event exist?
+        if(event_creator::find($id)===null){
+            return response()->json("Event does not exist",404);
+        }
+
         //Did the current user create this event?
         $verify=$event_creator->user_id;
         if(auth()->id()!=$verify)
@@ -224,10 +249,15 @@ class eventsController extends Controller
      */
     public function destroy(Request $request, event_creator $event_creator)
     {
-        //
+        //Does the current user create this event?
         $verify=$event_creator->user_id;
         if(auth()->id()!=$verify)
             return response()->json("Unauthorized 401",401);
+
+        //Does this event exist?
+        if(event_creator::find($id)===null){
+            return response()->json("Event does not exist",404);
+        }
 
         $event_creator->delete();
         return response()->json(null,204);
