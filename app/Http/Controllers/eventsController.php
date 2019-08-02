@@ -103,9 +103,15 @@ class eventsController extends Controller
         if(auth()->id()!=$verify)
             return response()->json("Unauthorized 401",401);
 
+        //If okay, then update
         $event_stat=invite_status::where('user_id',auth()->id())->where('event_id',$id)->update(['status'=>$request['status']]);
+
+        $email=User::where('id',auth()->id())->get();
+        \Mail::to($email)->send(new \App\Mail\EventCreated($event_stat));
         return response()->json($event_stat,200);
     }
+
+
 
     public function invite(Request $request, $id)
     {
@@ -131,6 +137,12 @@ class eventsController extends Controller
             return response()->json("Unauthorized 401",401);
 
         $email=$request['email'];
+
+        //Does the user being invited exist?
+        if(User::where('email',$email)->first()===null)
+            return response()->json("Invitee does not exist",401);
+
+        //Okay,exists
         $uid=User::where('email',$email)->get()[0]->id;
         //return $uid;
         $invite_stat=invite_status::create([
@@ -139,6 +151,7 @@ class eventsController extends Controller
                 'status'=>"Pending",
             ]);
 
+        \Mail::to($email)->send(new \App\Mail\EventCreated($invite_stat));
         return response()->json("Invitation sent",200);
     }
 
@@ -199,9 +212,16 @@ class eventsController extends Controller
         if(auth()->id()!=$verify)
             return response()->json("Unauthorized 401",401);
 
+         //Does the user being invited exist?
+        $email=$request['email'];
+        if(User::where('email',$email)->first()===null)
+            return response()->json("Member does not exist",401);
+
         //get the user email who has to be removed
-        $uid=User::where('email',$request['email'])->get()[0]->id;
+        $uid=User::where('email',$email)->get()[0]->id;
         $event_stat=invite_status::where('user_id',$uid)->where('event_id',$id)->delete();
+        $body="You have been removed";
+        \Mail::to($request['email'])->send(new \App\Mail\EventCreated($body));
         return response()->json(null,204);
     }
 
@@ -212,7 +232,7 @@ class eventsController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, event_creator $event_creator)
+    public function update(Request $request, $id)
     {
         //
         $rules=[
@@ -232,13 +252,22 @@ class eventsController extends Controller
         }
 
         //Did the current user create this event?
-        $verify=$event_creator->user_id;
+        $verify=event_creator::find($id)->user_id;
         if(auth()->id()!=$verify)
             return response()->json("Unauthorized 401",401);
 
         $request['user_id']=auth()->id();
-        $event_creator->update($request->all());
-        return response()->json($event_creator,200);
+        event_creator::find($id)->update($request->all());
+
+        //mail everyone who has been invited/is a member
+        $members=invite_status::where('event_id',$id)->get();
+
+        foreach($members as $member){
+            $body="Event updation alert<br>";
+            $email=$member->creator()->get()[0]->email;
+            \Mail::to($email)->send(new \App\Mail\EventCreated($body.event_creator::find($id)));
+        }
+        return response()->json(event_creator::find($id),200);
     }
 
     /**
@@ -247,10 +276,10 @@ class eventsController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Request $request, event_creator $event_creator)
+    public function destroy(Request $request, $id)
     {
         //Does the current user create this event?
-        $verify=$event_creator->user_id;
+        $verify=event_creator::find($id)->user_id;
         if(auth()->id()!=$verify)
             return response()->json("Unauthorized 401",401);
 
