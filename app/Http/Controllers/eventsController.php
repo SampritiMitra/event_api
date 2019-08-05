@@ -394,13 +394,13 @@ class eventsController extends Controller
             return response()->json("Unauthorized 401",401);
 
         //mail everyone who has been invited/is a member
-        // $members=invite_status::where('event_id',$id)->get();
+        $members=invite_status::where('event_id',$id)->get();
 
-        // foreach($members as $member){
-        //     $body="Event deletion alert";
-        //     $email=$member->creator()->get()[0]->email;
-        //     \Mail::to($email)->send(new \App\Mail\EventCreated($body.event_creator::find($id)->event_topic));
-        // }
+        foreach($members as $member){
+            $body="Event deletion alert";
+            $email=$member->creator()->get()[0]->email;
+            \Mail::to($email)->send(new \App\Mail\EventCreated($body.event_creator::find($id)->event_topic));
+        }
 
         event_creator::find($id)->delete();
         return response()->json("Event has been deleted",204);
