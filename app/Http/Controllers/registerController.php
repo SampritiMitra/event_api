@@ -18,7 +18,6 @@ class registerController extends Controller
     {
         //
         $rules=[
-                //'user_id'=>['required'],
                 'name'=>['required'],
                 'email'=>['required'],
                 'password'=>['required'],
@@ -29,12 +28,9 @@ class registerController extends Controller
                 return response()->json($validator->errors(),400);
             }
             
-           //   $event=event_creator::create($request->all());
-            $user=new User;
-            $user->name=$request['name'];
-            $user->email=$request['email'];
-            $user->password=Hash::make($request['password']);
-            $user->save();
+            $arr=$request->all();
+            $arr['password']=Hash::make($request['password']);
+            $user=User::create($arr);
      
             return response()->json($user,201);
          

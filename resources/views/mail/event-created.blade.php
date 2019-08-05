@@ -1,7 +1,7 @@
 @component('mail::message')
 # Introduction
 
-You have been invited!!
+Important Notification<br>
 {{$project}}
 
 @component('mail::button', ['url' => ''])

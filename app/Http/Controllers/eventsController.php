@@ -29,12 +29,35 @@ class eventsController extends Controller
     {
         // you may only see your events
         //events you have created and events you are invited to
+        //unless you are admin
+
+        //Are you an admin?
+        $admin=User::where('id',auth()->id())->get('isAdmin')[0]->isAdmin;
+        if($admin){
+            $users=invite_status::distinct()->get('user_id');
+            $adminarr=array();
+            foreach($users as $user){
+                $events=invite_status::where('user_id',$user->user_id)->get('id');
+                $arr=array();
+                if($events!==null)
+                foreach($events as $event){
+                    array_push($arr,invite_status::find($event->id)->event,
+                        invite_status::where('id',$event->id)->get('status')[0]);
+                }
+                array_push($adminarr,$arr);
+            }
+            return $adminarr;
+        }
+        //If not an admin
+        // you may only see your events
+        //events you have created and events you are invited to
         $events=invite_status::where('user_id',auth()->id())->get('id');
         $arr=array();
-        foreach($events as $event){
-            array_push($arr,invite_status::find($event->id)->event,
-                invite_status::where('id',$event->id)->get('status')[0]);
-        }
+        if($events!==null)
+            foreach($events as $event){
+                array_push($arr,invite_status::find($event->id)->event,
+                    invite_status::where('id',$event->id)->get('status')[0]);
+            }
         return $arr;
     }
     /**
@@ -86,6 +109,7 @@ class eventsController extends Controller
                 //'user_id'=>['required'],
                 'status'=>['required',
                 Rule::in(['Accepted', 'Pending','Rejected'])],
+                'user_id' => Rule::requiredIf(User::where('id',auth()->id())->get('isAdmin')[0]->isAdmin),
             ];
         $validator=Validator::make($request->all(),$rules);
 
@@ -98,10 +122,28 @@ class eventsController extends Controller
             return response()->json("Event does not exist",404);
         }
 
-        //If okay, then update
-        $event_stat=invite_status::where('user_id',auth()->id())->where('event_id',$id)->update(['status'=>$request['status']]);
+       
+        $user;
 
-        $email=User::where('id',auth()->id())->get();
+        // Is the admin making changes?
+        if(User::where('id',auth()->id())->get('isAdmin')[0]->isAdmin){
+            $user=$request['user_id'];
+        }
+        else{
+            $user=auth()->id();
+        }
+
+
+         //Is the user invited to this event?
+        if(invite_status::where('user_id',$user)->where('event_id',$id)->first()===null){
+            return "The current user is not invited to this particular event";
+        }
+        
+        
+        //If okay, then update
+        $event_stat=invite_status::where('user_id',$user)->where('event_id',$id)->update(['status'=>$request['status']]);
+
+        $email=User::where('id',$user)->get();
         \Mail::to($email)->send(new \App\Mail\EventCreated($event_stat));
         return response()->json($event_stat,200);
     }
@@ -127,8 +169,10 @@ class eventsController extends Controller
         }
 
         //Did the current user create this event?
+        // Or is the user an admin?
         $verify=event_creator::find($id)->user_id;
-        if(auth()->id()!=$verify)
+        //return User::where('id',auth()->id())->get('isAdmin')[0]->isAdmin;
+        if(auth()->id()!=$verify && User::where('id',auth()->id())->get('isAdmin')[0]->isAdmin==0)
             return response()->json("Unauthorized 401",401);
 
         $email=$request['email'];
@@ -139,9 +183,10 @@ class eventsController extends Controller
 
         //Okay,exists
         $uid=User::where('email',$email)->get()[0]->id;
+        //return $uid;
 
-        //Is the user already a member or an invitee?
-        if(invite_status::where('user_id',$uid)->first()!==null)
+        //Is the user already a member or an invitee of this current event?
+        if(invite_status::where('user_id',$uid)->where('event_id',$id)->first()!==null)
             return response()->json("This person has already received an invite",401);
 
 
@@ -176,7 +221,9 @@ class eventsController extends Controller
     public function show(Request $request)
     {
         //
-        return User::where('id',auth()->id());
+        if(User::where('id',auth()->id())->get('isAdmin')[0]->isAdmin)
+            return User::all();
+        return User::where('id',auth()->id())->get();
     }
 
     /**
@@ -195,6 +242,29 @@ class eventsController extends Controller
     public function showMems()
     {
         //
+        //Are you an admin?
+        if(User::where('id',auth()->id())->get('isAdmin')[0]->isAdmin){
+            $events=event_creator::distinct()->get('id');
+            $arr=array();
+            foreach($events as $event){
+                if(invite_status::where('event_id',$event->id)->where('status','Accepted')->first()!==null){
+                    $mem=invite_status::where('event_id',$event->id)->where('status','Accepted')->get();
+                    // return $mem;
+                    $a=array();
+                    foreach($mem as $m){
+                        array_push($a,$m->creator->email);
+                    }
+                    $arr[$event->id]=$a;
+                }
+                else{
+                    $a="No members yet";
+                    $arr[$event->id]=$a;
+                }
+            }
+            return $arr;
+        }
+
+        // if not admin then just show members of projects you have been invited to or are a part of
         $user_id=auth()->id();
         $events=invite_status::where('user_id',$user_id)->get();
         $arr=array();
@@ -205,6 +275,10 @@ class eventsController extends Controller
                 foreach($mem as $m){
                     array_push($a,$m->creator->email);
                 }
+                $arr[$event->event_id]=$a;
+            }
+            else{
+                $a="No members yet";
                 $arr[$event->event_id]=$a;
             }
         }
@@ -231,18 +305,22 @@ class eventsController extends Controller
             return response()->json("Event does not exist",404);
         }
 
-        //Did the current user create this event?
+        //Did the current user create this event? 
+        // Or is the user an admin?
         $verify=event_creator::find($id)->user_id;
-        if(auth()->id()!=$verify)
+        if(auth()->id()!=$verify and !User::where('id',auth()->id())->get('isAdmin')[0]->isAdmin)
             return response()->json("Unauthorized 401",401);
 
-         //Does the user being invited exist?
+         //Does the user being deleted exist?
         $email=$request['email'];
         if(User::where('email',$email)->first()===null)
             return response()->json("Member does not exist",401);
 
         //get the user email who has to be removed
         $uid=User::where('email',$email)->get()[0]->id;
+
+        if($event_stat=invite_status::where('user_id',$uid)->where('event_id',$id)->first()===null)
+            return "That user cannot be removed since they are not a part of this event";
         $event_stat=invite_status::where('user_id',$uid)->where('event_id',$id)->delete();
         $body="You have been removed";
         \Mail::to($request['email'])->send(new \App\Mail\EventCreated($body));
@@ -260,9 +338,9 @@ class eventsController extends Controller
     {
         //
         $rules=[
-                'event_topic'=>['required'],
-             //   'start_time'=>['required'],
-            //    'end_time'=>['required'],
+                'event_topic' => 'required_without_all:start_time,end_time',
+                'start_time' => 'required_without_all:event_topic,end_time',
+                'end_time' => 'required_without_all:event_topic,start_time',
     		];
 
 		$validator=Validator::make($request->all(),$rules);
@@ -276,8 +354,9 @@ class eventsController extends Controller
         }
 
         //Did the current user create this event?
+        // or is the user an admin?
         $verify=event_creator::find($id)->user_id;
-        if(auth()->id()!=$verify)
+        if(auth()->id()!=$verify and !User::where('id',auth()->id())->get('isAdmin')[0]->isAdmin)
             return response()->json("Unauthorized 401",401);
 
         $request['user_id']=auth()->id();
@@ -302,18 +381,28 @@ class eventsController extends Controller
      */
     public function destroy(Request $request, $id)
     {
-        //Does the current user create this event?
-        $verify=event_creator::find($id)->user_id;
-        if(auth()->id()!=$verify)
-            return response()->json("Unauthorized 401",401);
 
         //Does this event exist?
         if(event_creator::find($id)===null){
             return response()->json("Event does not exist",404);
         }
 
-        $event_creator->delete();
-        return response()->json("Member has been deleted",204);
+        //Does the current user create this event?
+        // or is the user an admin? 
+         $verify=event_creator::find($id)->user_id;
+        if(auth()->id()!=$verify and !User::where('id',auth()->id())->get('isAdmin')[0]->isAdmin)
+            return response()->json("Unauthorized 401",401);
 
+        //mail everyone who has been invited/is a member
+        // $members=invite_status::where('event_id',$id)->get();
+
+        // foreach($members as $member){
+        //     $body="Event deletion alert";
+        //     $email=$member->creator()->get()[0]->email;
+        //     \Mail::to($email)->send(new \App\Mail\EventCreated($body.event_creator::find($id)->event_topic));
+        // }
+
+        event_creator::find($id)->delete();
+        return response()->json("Event has been deleted",204);
     }
 }
