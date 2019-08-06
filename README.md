@@ -79,7 +79,7 @@
 
 <h4>@create</h4>
 <ul>
-    <li>validate and create the event</li>
+ <li>validate and create the event</li>
  <li>once you have created an event, you are also going to be added to the list of pending invitees</li>
 <li>need the record of the latest event created by the current user so that we can set its status to pending in the invite_status table</li>
  </ul>
@@ -94,6 +94,25 @@
 <li>Update status and send mail to the required user</li>
 </ul>
 
+<h4>@invite</h4>
+<ul>
+<li>email of user required for invitation</li>
+<li>Check if event exists</li>
+<li>Is the user an admin or did the user create the event?</li>
+<li>Does the user being invited exist?</li>
+<li>Is the user already a member or an invitee of this current event?</li>
+<li>Send email and invite</li>
+</ul>
+
+<h4>@invite</h4>
+<ul>
+<li>email of user required for invitation</li>
+<li>Check if event exists</li>
+<li>Is the user an admin or did the user create the event?</li>
+<li>Does the user being invited exist?</li>
+<li>Is the user already a member or an invitee of this current event?</li>
+<li>Send email and invite</li>
+</ul>
 
 
 
