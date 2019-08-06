@@ -20,6 +20,7 @@ class eventsController extends Controller
      * @return \Illuminate\Http\Response
      */
 
+    // constructor for authentication
     public function __construct()
     {
         $this->middleware('auth.basic.once');
@@ -27,34 +28,36 @@ class eventsController extends Controller
 
     public function index()
     {
-        // you may only see your events //events you have created and events you are invited to
+        // you may only see your events which you have created and events you are invited to
         //unless you are admin
          $admin=User::where('id',auth()->id())->first('isAdmin')->isAdmin;
+        
+
         //Are you an admin?
-       
         if($admin){
-            $users=invite_status::distinct()->get('user_id');
-            $adminarr=array();
-            foreach($users as $user){
-                $events=invite_status::where('user_id',$user->user_id)->get('id');
-                $arr=array();
-                if($events!==null)
-                foreach($events as $event){
-                    array_push($arr,invite_status::find($event->id)->event,
-                        invite_status::where('id',$event->id)->first('status'));
+            $invitees=invite_status::all();
+            $arr=array();
+            if($invitees!==null){
+                foreach($invitees as $invitee){
+                    $A=$invitee->event;
+                    $A['status']=$invitee->status;
+                    array_push($arr,$A);
                 }
-                array_push($adminarr,$arr);
             }
-            return $adminarr;
+            return $arr;
         }
-        //If not an admin // you may only see your events //events you have created and events you are invited to
-        $events=invite_status::where('user_id',auth()->id())->get('id');
+
+        //If not an admin  you may only see your events which you have created and events you are invited to
+        $invitees=invite_status::where('user_id',auth()->id())->get();
         $arr=array();
-        if($events!==null)
-            foreach($events as $event){
-                array_push($arr,invite_status::find($event->id)->event,
-                    invite_status::where('id',$event->id)->first('status'));
+        if($invitees!==null){
+            foreach($invitees as $invitee){
+                $A=$invitee->event;
+                $A['status']=$invitee->status;
+                array_push($arr,$A);
+                // find events you are a part of, show their information and whther they are accepted, rejected or pending
             }
+        }
         return $arr;
     }
     /**
@@ -132,7 +135,7 @@ class eventsController extends Controller
 
          //Is the user invited to this event?
         if(invite_status::where('user_id',$user)->where('event_id',$id)->first()===null){
-            return "The current user is not invited to this particular event";
+            return response()->json("The current user is not invited to this particular even",404);
         }
         
         
@@ -298,8 +301,10 @@ class eventsController extends Controller
         //get the user email who has to be removed
         $uid=User::where('email',$email)->first()->id;
 
+        // Is the user a part of the event?
         if($event_stat=invite_status::where('user_id',$uid)->where('event_id',$id)->first()===null)
-            return "That user cannot be removed since they are not a part of this event";
+            return response()->json("That user cannot be removed since they are not a part of this event",404);
+
         $event_stat=invite_status::where('user_id',$uid)->where('event_id',$id)->delete();
         $body="You have been removed";
         \Mail::to($request['email'])->send(new \App\Mail\EventCreated($body));
