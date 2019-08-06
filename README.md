@@ -36,7 +36,24 @@
         <td>show</td>
         <td>Shows your profile</td>
     </tr>
-    
-    
-    
+    <tr>
+        <td>/accept/{e_id}</td>
+        <td>accept</td>
+        <td>Accept/Reject an invitation</td>
+    </tr>
+    <tr>
+        <td>/update/{e_id}</td>
+        <td>update</td>
+        <td>Update an event</td>
+    </tr>
+    <tr>
+        <td>/delete</td>
+        <td>destroy</td>
+        <td>Delete an event</td>
+    </tr>
+    <tr>
+        <td>/remove/{id}</td>
+        <td>remove</td>
+        <td>Remove a member</td>
+    </tr>
 </table>
