@@ -26,12 +26,11 @@ class eventsController extends Controller
         $this->middleware('auth.basic.once');
     }
 
+
+    // you may only see your events which you have created and events you are invited to unless you are admin
     public function index()
     {
-        // you may only see your events which you have created and events you are invited to
-        //unless you are admin
          $admin=User::where('id',auth()->id())->first('isAdmin')->isAdmin;
-        
 
         //Are you an admin?
         if($admin){
@@ -86,8 +85,7 @@ class eventsController extends Controller
 
          //once you have created an event, you are also going to be added to the list of pending invitees
 
-            //need the record of the latest event created by the current user
-            //so that we can set its status to pending in the invite_status table
+            //need the record of the latest event created by the current user so that we can set its status to pending in the invite_status table
             $e_id=DB::table('event_creators')->where('user_id', auth()->id())->orderBy('id', 'desc')->first()->id;
 
             $invite_stat=invite_status::create([
@@ -105,7 +103,6 @@ class eventsController extends Controller
     {
         //
         $rules=[
-                //'user_id'=>['required'],
                 'status'=>['required',
                 Rule::in(['Accepted', 'Pending','Rejected'])],
                 'user_id' => Rule::requiredIf(User::where('id',auth()->id())->first('isAdmin')->isAdmin),
@@ -121,7 +118,6 @@ class eventsController extends Controller
             return response()->json("Event does not exist",404);
         }
 
-       
         $user;
 
         // Is the admin making changes?
@@ -132,16 +128,15 @@ class eventsController extends Controller
             $user=auth()->id();
         }
 
-
          //Is the user invited to this event?
         if(invite_status::where('user_id',$user)->where('event_id',$id)->first()===null){
             return response()->json("The current user is not invited to this particular even",404);
         }
         
-        
         //If okay, then update
         $event_stat=invite_status::where('user_id',$user)->where('event_id',$id)->update(['status'=>$request['status']]);
 
+        //Send mail to required user
         $email=User::where('id',$user)->get();
         \Mail::to($email)->send(new \App\Mail\EventCreated($event_stat));
         return response()->json($event_stat,200);
@@ -153,7 +148,6 @@ class eventsController extends Controller
     {
         //
         $rules=[
-                //'user_id'=>['required'],
                 'email'=>['required'],
             ];
 
@@ -181,20 +175,20 @@ class eventsController extends Controller
 
         //Okay,exists
         $uid=User::where('email',$email)->first()->id;
-        //return $uid;
 
         //Is the user already a member or an invitee of this current event?
         if(invite_status::where('user_id',$uid)->where('event_id',$id)->first()!==null)
             return response()->json("This person has already received an invite",401);
 
 
-        //return $uid;
+        //Create record in invite_status table
         $invite_stat=invite_status::create([
                 'user_id'=>$uid,
                 'event_id'=>$id,
                 'status'=>"Pending",
             ]);
 
+        //Send email
         \Mail::to($email)->send(new \App\Mail\EventCreated($invite_stat));
         return response()->json("Invitation sent",200);
     }
@@ -266,8 +260,6 @@ class eventsController extends Controller
         }
         return $arr;
     }
-
-
 
 
     public function remove(Request $request, $id)
@@ -352,6 +344,7 @@ class eventsController extends Controller
         foreach($members as $member){
             $body="Event updation alert<br>";
             $email=$member->creator()->first()->email;
+            //send email to the user
             \Mail::to($email)->send(new \App\Mail\EventCreated($body.event_creator::find($id)));
         }
         return response()->json(event_creator::find($id),200);
