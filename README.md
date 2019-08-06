@@ -104,14 +104,10 @@
 <li>Send email and invite</li>
 </ul>
 
-<h4>@invite</h4>
+<h4>@showMems</h4>
 <ul>
-<li>email of user required for invitation</li>
-<li>Check if event exists</li>
-<li>Is the user an admin or did the user create the event?</li>
-<li>Does the user being invited exist?</li>
-<li>Is the user already a member or an invitee of this current event?</li>
-<li>Send email and invite</li>
+<li>Show all events if user is Admin</li>
+<li>Show own profile if user is non Admin</li>
 </ul>
 
 
