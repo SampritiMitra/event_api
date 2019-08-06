@@ -126,13 +126,6 @@
 <li>Mail everyone who is a member</li>
 </ul>
 
-<h4>@update</h4>
-<ul>
-<li>Check if the event exists</li>
-<li>Check if the event was created by the current user, or if the current user is an Admin</li>
-<li>Mail everyone who is a member and update</li>
-</ul>
-
 <h4>@destroy</h4>
 <ul>
 <li>Check if the event exists</li>
