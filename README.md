@@ -71,3 +71,12 @@
 </table>
 
 <h3>@eventsController</h3>
+<h4> @index</h4>
+you may only see your events which you have created and events you are invited to unless you are admin<br>
+find events you are a part of, show their information and whther they are accepted, rejected or pending<br>
+
+<h4>@create</h4>
+ validate and create the event<br>
+ once you have created an event, you are also going to be added to the list of pending invitees<br>
+need the record of the latest event created by the current user so that we can set its status to pending in the invite_status table<br>
+
