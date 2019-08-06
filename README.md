@@ -106,9 +106,36 @@
 
 <h4>@showMems</h4>
 <ul>
-<li>Show all events if user is Admin</li>
-<li>Show own profile if user is non Admin</li>
+<li>Show all members of every event if user is Admin</li>
+<li>Show members of all events user is a part of if user is non Admin</li>
 </ul>
 
+<h4>@remove</h4>
+<ul>
+<li>Email of member to be removed is required</li>
+<li>Check if the event exists</li>
+<li>Check if the event was created by the current user, or if the current user is an Admin</li>
+<li>Check if the user to be deleted exists</li>
+<li>Check if the user to be deleted is a part of the event</li>
+</ul>
 
+<h4>@update</h4>
+<ul>
+<li>Check if the event exists</li>
+<li>Check if the event was created by the current user, or if the current user is an Admin</li>
+<li>Mail everyone who is a member</li>
+</ul>
 
+<h4>@update</h4>
+<ul>
+<li>Check if the event exists</li>
+<li>Check if the event was created by the current user, or if the current user is an Admin</li>
+<li>Mail everyone who is a member and update</li>
+</ul>
+
+<h4>@destroy</h4>
+<ul>
+<li>Check if the event exists</li>
+<li>Check if the event was created by the current user, or if the current user is an Admin</li>
+<li>Mail everyone who is a member and delete the event</li>
+</ul>
