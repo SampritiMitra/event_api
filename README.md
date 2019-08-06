@@ -1,5 +1,6 @@
 # event_api
 <h3>Events Controller</h3>
+<h4>Event Management system using Laravel framework</h4>
 <table>
     <tr>
     <th>URI</th>
@@ -68,3 +69,4 @@
         <td>Remove a member</td>
     </tr>
 </table>
+
