@@ -130,7 +130,7 @@ class eventsController extends Controller
 
          //Is the user invited to this event?
         if(invite_status::where('user_id',$user)->where('event_id',$id)->first()===null){
-            return response()->json("The current user is not invited to this particular even",404);
+            return response()->json("The current user is not invited to this particular event",404);
         }
         
         //If okay, then update
@@ -138,7 +138,8 @@ class eventsController extends Controller
 
         //Send mail to required user
         $email=User::where('id',$user)->get();
-        \Mail::to($email)->send(new \App\Mail\EventCreated($event_stat));
+        $body="You have changed your event status to";
+        \Mail::to($email)->send(new \App\Mail\EventCreated($request['status'],$body));
         return response()->json($event_stat,200);
     }
 
@@ -189,7 +190,8 @@ class eventsController extends Controller
             ]);
 
         //Send email
-        \Mail::to($email)->send(new \App\Mail\EventCreated($invite_stat));
+        $body="You have been invited";
+        \Mail::to($email)->send(new \App\Mail\EventCreated($request['email'],$body));
         return response()->json("Invitation sent",200);
     }
 
@@ -200,6 +202,7 @@ class eventsController extends Controller
      * @return \Illuminate\Http\Response
      */
     
+    //show own profile
     public function show(Request $request)
     {
         //
@@ -215,6 +218,7 @@ class eventsController extends Controller
      * @return \Illuminate\Http\Response
      */
     
+    //show all members of events you are a part of including those you have created
     public function showMems()
     {
         //
@@ -299,7 +303,7 @@ class eventsController extends Controller
 
         $event_stat=invite_status::where('user_id',$uid)->where('event_id',$id)->delete();
         $body="You have been removed";
-        \Mail::to($request['email'])->send(new \App\Mail\EventCreated($body));
+        \Mail::to($request['email'])->send(new \App\Mail\EventCreated($request['email'],$body));
         return response()->json(null,204);
     }
 
@@ -342,10 +346,10 @@ class eventsController extends Controller
         $members=invite_status::where('event_id',$id)->get();
 
         foreach($members as $member){
-            $body="Event updation alert<br>";
+            $body="Event updation alert";
             $email=$member->creator()->first()->email;
             //send email to the user
-            \Mail::to($email)->send(new \App\Mail\EventCreated($body.event_creator::find($id)));
+            \Mail::to($email)->send(new \App\Mail\EventCreated($body,event_creator::find($id)));
         }
         return response()->json(event_creator::find($id),200);
     }
@@ -376,7 +380,7 @@ class eventsController extends Controller
         foreach($members as $member){
             $body="Event deletion alert";
             $email=$member->creator()->first()->email;
-            \Mail::to($email)->send(new \App\Mail\EventCreated($body.event_creator::find($id)->event_topic));
+            \Mail::to($email)->send(new \App\Mail\EventCreated($body,event_creator::find($id)->event_topic));
         }
 
         event_creator::find($id)->delete();

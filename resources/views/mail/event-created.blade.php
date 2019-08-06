@@ -2,6 +2,7 @@
 # Introduction
 
 Important Notification<br>
+{{$proj}}<br>
 {{$project}}
 
 @component('mail::button', ['url' => ''])

@@ -11,16 +11,17 @@ class EventCreated extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $project;
+    public $project, $proj;
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($project)
+    public function __construct($project, $proj)
     {
         //
         $this->project=$project;
+        $this->proj=$proj;
     }
 
     /**
