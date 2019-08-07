@@ -16,23 +16,7 @@ class registerController extends Controller
     //
     public function register(Request $request)
     {
-        //
-        $rules=[
-                'name'=>['required'],
-                'email'=>['required','email'],
-                'password'=>['required'],
-            ];
-
-            $validator=Validator::make($request->all(),$rules);
-            if($validator->fails()){
-                return response()->json($validator->errors(),400);
-            }
-            
-            $arr=$request->all();
-            $arr['password']=Hash::make($request['password']);
-            $user=User::create($arr);
-     
-            return response()->json($user,201);
-         
+        $user=User::register($request);
+        return response()->json($user,201);
     }
 }

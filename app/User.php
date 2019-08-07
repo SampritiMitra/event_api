@@ -4,6 +4,9 @@ namespace App;
 
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Http\Request;
+use Validator;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
@@ -29,6 +32,24 @@ class User extends Authenticatable
         'password', 'remember_token',
     ];
 
+    public static function register(Request $request){
+         //
+        $rules=[
+                'name'=>['required'],
+                'email'=>['required','email'],
+                'password'=>['required'],
+            ];
+
+            $validator=Validator::make($request->all(),$rules);
+            if($validator->fails()){
+                return response()->json($validator->errors(),400);
+            }
+            
+            $arr=$request->all();
+            $arr['password']=Hash::make($request['password']);
+            $user=User::create($arr);
+            return $user;
+    }
     /**
      * The attributes that should be cast to native types.
      *
